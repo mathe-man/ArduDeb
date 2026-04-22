@@ -2,11 +2,14 @@
 #include <Arduino.h>
 
 
-#define DefaultBoardDebugName "Board"
+#define BoardName "Board"
+
+#define MessageSeparator "|"
 
 #define ArduDeb_MagicNumber 0xADEB
 #define MessagesBufferSize 128
 
+#define UnsignedInt uint16_t // This type can be changed depending of the needs
 
 class Event;
 
@@ -50,7 +53,7 @@ public:
 
 
 private:
-    char* eventsMessagesBuffer[128]; 
+    char* eventsMessagesBuffer[MessagesBufferSize]; 
 
     bool inline FitInBuffer(ArduDebMessage message) {
         return MessagesBufferSize - 1 > message.Length(); // -1 for null terminator
