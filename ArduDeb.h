@@ -1,3 +1,7 @@
+//
+
+//
+
 #pragma once
 #include <Arduino.h>
 
@@ -19,14 +23,17 @@ struct ArduDebMessage {
 
     ArduDebMessage(const char* sender, const char* content) : sender(sender), content(content) {}
 
-    uint8_t inline Length() const {
-        return strlen(sender) + strlen(content) + 1; // +1 for "=" separator
+    UnsignedInt inline Length() const {
+        return strlen(sender) + strlen(content) + strlen(MessageSeparator) + 1; // +1 for the "=" separator
     }
     const char* Build() const {
         char* message = new char[strlen(sender) + strlen(content) + 2]; // +2 for "=" separator and null terminator
+        
         strcpy(message, sender);
         strcat(message, "=");
         strcat(message, content);
+        strcat(message, MessageSeparator);
+
         return message;
     }
 };
@@ -63,7 +70,21 @@ private:
         return MessagesBufferSize - strlen(BoardName) - 2;
     }
 
-    bool LogEvent(ArduDebMessage message) {
+    void inline ClearBuffer() {
+        eventsMessagesBuffer[0] = "\0";
+    }
+   
+    void inline AddToBuffer(ArduDebMessage message) {
+        strcat(eventsMessagesBuffer[0], message.Build());   // The message build already include separator
+    }
+
+    
+
+#define MaxLogAttempt 5
+    bool LogEvent(ArduDebMessage message, uint8_t attempt = 0) {
+        if (attempt >= MaxLogAttempt) {
+            return false;       // Max log attempts reached, give up
+        }
         // Check if the message size is acceptable
         if (message.Length() > EmptyBufferSpace()) { // -2 for null terminator and separator (board|messages)) {
             Serial.print("Message too long to fit in buffer, sender: ");
@@ -73,9 +94,24 @@ private:
         }
         // Check if the message can fit in the buffer
         if (!FitInBuffer(message)) {
-            Serial.println("Buffer full, cannot log new event.");
-            return false;
+            FlushBuffer();
+            return LogEvent(message, attempt++); // Try to log the message again after flushing the buffer
         }
+
+        // All the test passed => Add the message to the buffer and return true
+        AddToBuffer(message);
+        return true;
+    }
+
+    void FlushBuffer()
+    {
+        // Send the serial communication with the format: MagicNumber|BoardName|message1|message2|...|messageN (Assuming the separator is '|')
+        print(ArduDeb_MagicNumber); print(MessageSeparator);
+        print(BoardName); print(MessageSeparator);
+        
+        println(eventsMessagesBuffer[0]); // Print the messages
+
+        ClearBuffer();
     }
 };
 
