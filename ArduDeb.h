@@ -83,7 +83,7 @@ private:
     friend class Event;
 
 #define MaxLogAttempt 5
-    bool LogEvent(ArduDebMessage message, uint8_t attempt = 0) {
+    bool LogMessage(ArduDebMessage message, uint8_t attempt = 0) {
         if (attempt >= MaxLogAttempt) {
             return false;       // Max log attempts reached, give up
         }
@@ -97,7 +97,7 @@ private:
         // Check if the message can fit in the buffer
         if (!FitInBuffer(message)) {
             FlushBuffer();
-            return LogEvent(message, attempt++); // Try to log the message again after flushing the buffer
+            return LogMessage(message, attempt++); // Try to log the message again after flushing the buffer
         }
 
         // All the test passed => Add the message to the buffer and return true
@@ -139,7 +139,7 @@ protected:
 
     bool inline Log(const char* content) {
         ArduDebMessage message(getName(), content);
-        return deb->LogEvent(message);
+        return deb->LogMessage(message);
     }
 
 private:
