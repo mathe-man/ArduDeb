@@ -60,22 +60,22 @@ public:
 
 
 private:
-    char* eventsMessagesBuffer[MessagesBufferSize]; 
+    char eventsMessagesBuffer[MessagesBufferSize]; 
 
     bool inline FitInBuffer(ArduDebMessage message) {
         return MessagesBufferSize - 1 > message.Length(); // -1 for null terminator
     }
 
-    UnsignedInt inline EmptyBufferSpace() {
-        return MessagesBufferSize - strlen(BoardName) - 2;
+    UnsignedInt inline  EmptyBufferSpace() {
+        return MessagesBufferSize - 1; // -1 for null terminator
     }
 
     void inline ClearBuffer() {
-        eventsMessagesBuffer[0] = "\0";
+        eventsMessagesBuffer[0] = '\0';
     }
    
     void inline AddToBuffer(ArduDebMessage message) {
-        strcat(eventsMessagesBuffer[0], message.Build());   // The message build already include separator
+        strcat(eventsMessagesBuffer, message.Build());   // The message build already include separator
     }
 
     
