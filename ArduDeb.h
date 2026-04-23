@@ -1,7 +1,3 @@
-//
-
-//
-
 #pragma once
 #include <Arduino.h>
 
@@ -45,7 +41,11 @@ public:
         // Start serial communication
         Serial.begin(9600);
         // Initialize the events messages buffer
-        eventsMessagesBuffer[0] = "\0";
+        eventsMessagesBuffer[0] = '\0';
+    }
+
+    bool Flush() {
+        return FlushBuffer();
     }
 
     template<typename T>    
@@ -63,7 +63,7 @@ private:
     char eventsMessagesBuffer[MessagesBufferSize]; 
 
     bool inline FitInBuffer(ArduDebMessage message) {
-        return MessagesBufferSize - 1 > message.Length(); // -1 for null terminator
+        return strlen(eventsMessagesBuffer) + message.Length() + 1 < MessagesBufferSize; // +1 for null terminator
     }
 
     UnsignedInt inline  EmptyBufferSpace() {
@@ -79,6 +79,8 @@ private:
     }
 
     
+    // Event class can have access to logging
+    friend class Event;
 
 #define MaxLogAttempt 5
     bool LogEvent(ArduDebMessage message, uint8_t attempt = 0) {
@@ -86,7 +88,7 @@ private:
             return false;       // Max log attempts reached, give up
         }
         // Check if the message size is acceptable
-        if (message.Length() > EmptyBufferSpace()) { // -2 for null terminator and separator (board|messages)) {
+        if (message.Length() > EmptyBufferSpace()) {
             Serial.print("Message too long to fit in buffer, sender: ");
             Serial.println(message.sender);
 
@@ -103,15 +105,19 @@ private:
         return true;
     }
 
-    void FlushBuffer()
+    bool FlushBuffer()
     {
+        if (strlen(eventsMessagesBuffer) == EmptyBufferSpace()) {
+            return false; // Buffer is empty, no need to flush
+        }
         // Send the serial communication with the format: MagicNumber|BoardName|message1|message2|...|messageN (Assuming the separator is '|')
         print(ArduDeb_MagicNumber); print(MessageSeparator);
         print(BoardName); print(MessageSeparator);
         
-        println(eventsMessagesBuffer[0]); // Print the messages
+        println(eventsMessagesBuffer); // Print the messages
 
         ClearBuffer();
+        return true;
     }
 };
 
@@ -119,23 +125,32 @@ private:
 
 class Event {
 public:
-    Event(const char* name) : eventName(name) {}
+    Event(const char* name, ArduDeb* deb) : eventName(name), deb(deb) {}
 
     virtual const void flag() = 0;
 
     const char* getName() const {
         return eventName;
     }
+    
 
-    private:
-        const char* eventName;
+protected:
+    ArduDeb* deb;
+
+    bool inline Log(const char* content) {
+        ArduDebMessage message(getName(), content);
+        return deb->LogEvent(message);
+    }
+
+private:
+    const char* eventName;
 };
 
 class TickEvent : public Event {
 public:
-    TickEvent() : Event("TickEvent") {}
+    TickEvent(ArduDeb* deb) : Event("TickEvent", deb) {}
 
     const void flag() override {
-        // Implementation for flagging a tick event
+        Log("Tick");
     }
 };
