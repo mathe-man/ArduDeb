@@ -48,6 +48,11 @@ public:
         return FlushBuffer();
     }
 
+    bool Log(ArduDebMessage message)
+    {
+        return LogMessage(message);
+    }
+
     template<typename T>    
     void print(const T& value) {
         Serial.print(value);
