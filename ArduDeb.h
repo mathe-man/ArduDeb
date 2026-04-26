@@ -6,7 +6,7 @@
 
 #define MessageSeparator "|"
 
-#define ArduDeb_MagicNumber 0xADEB
+#define ArduDeb_MagicNumber "\xAD\xEB" // Magic number to identify ArduDeb messages: 0xADEB
 #define MessagesBufferSize 128
 
 #define UnsignedInt uint16_t // This type can be changed depending of the needs
@@ -52,14 +52,12 @@ public:
         return LogMessage(message);
     }
 
-    template<typename T>    
-    static inline void print(const T& value) {
-        writeFunction(&value);
+    static inline void print(const char* value) {
+        writeFunction(value);
     }
 
-    template<typename T>
-    static inline void println(const T& value) {
-        writeFunction(&value);
+    static inline void println(const char* value) {
+        writeFunction(value);
         writeFunction("\n\r");  // Finish the line with a newline and carriage return
     }
 
