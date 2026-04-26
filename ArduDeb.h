@@ -34,14 +34,22 @@ struct ArduDebMessage {
     }
 };
 
+typedef void (*WriteFunction)(const char*);
 
 class ArduDeb {
 public:
     ArduDeb() {
-        // Start serial communication
-        Serial.begin(9600);
         // Initialize the events messages buffer
         eventsMessagesBuffer[0] = '\0';
+
+        // Set the default write function to Serial.print
+        writeFunction = [](const char* message) {
+            Serial.print(message);
+        };
+    }
+
+    void setWriteFunction(WriteFunction func) {
+        writeFunction = func;
     }
 
     bool Flush() {
@@ -55,16 +63,19 @@ public:
 
     template<typename T>    
     void print(const T& value) {
-        Serial.print(value);
+        writeFunction(&value);
     }
 
     template<typename T>
     void println(const T& value) {
-        Serial.println(value);
+        writeFunction(&value);
+        writeFunction("\n\r");  // Finish the line with a newline and carriage return
     }
 
 
 private:
+
+    WriteFunction writeFunction; // Function pointer for writing messages, can be set to Serial.print or any other function
     char eventsMessagesBuffer[MessagesBufferSize]; 
 
     bool inline FitInBuffer(ArduDebMessage message) {
@@ -118,9 +129,7 @@ private:
         // Send the serial communication with the format: MagicNumber|BoardName|message1|message2|...|messageN (Assuming the separator is '|')
         print(ArduDeb_MagicNumber); print(MessageSeparator);
         print(BoardName); print(MessageSeparator);
-        
-        println(eventsMessagesBuffer); // Print the messages
-
+        println(eventsMessagesBuffer);
         ClearBuffer();
         return true;
     }
