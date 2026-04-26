@@ -38,17 +38,8 @@ typedef void (*WriteFunction)(const char*);
 
 class ArduDeb {
 public:
-    ArduDeb() {
-        // Initialize the events messages buffer
-        eventsMessagesBuffer[0] = '\0';
 
-        // Set the default write function to Serial.print
-        writeFunction = [](const char* message) {
-            Serial.print(message);
-        };
-    }
-
-    void setWriteFunction(WriteFunction func) {
+    static void setWriteFunction(WriteFunction func) {
         writeFunction = func;
     }
 
@@ -62,12 +53,12 @@ public:
     }
 
     template<typename T>    
-    void print(const T& value) {
+    static inline void print(const T& value) {
         writeFunction(&value);
     }
 
     template<typename T>
-    void println(const T& value) {
+    static inline void println(const T& value) {
         writeFunction(&value);
         writeFunction("\n\r");  // Finish the line with a newline and carriage return
     }
@@ -75,22 +66,26 @@ public:
 
 private:
 
-    WriteFunction writeFunction; // Function pointer for writing messages, can be set to Serial.print or any other function
-    char eventsMessagesBuffer[MessagesBufferSize]; 
+    // Function pointer for writing messages, use Serial.print by default
+    static inline WriteFunction writeFunction = [](const char* message) {
+        Serial.print(message);
+    }; 
 
-    bool inline FitInBuffer(ArduDebMessage message) {
+    static inline char eventsMessagesBuffer[MessagesBufferSize] = ""; // Buffer to hold the messages before flushing
+
+    static inline bool FitInBuffer(ArduDebMessage message) {
         return strlen(eventsMessagesBuffer) + message.Length() + 1 < MessagesBufferSize; // +1 for null terminator
     }
 
-    UnsignedInt inline  EmptyBufferSpace() {
+    static inline UnsignedInt EmptyBufferSpace() {
         return MessagesBufferSize - 1; // -1 for null terminator
     }
 
-    void inline ClearBuffer() {
+    static inline void ClearBuffer() {
         eventsMessagesBuffer[0] = '\0';
     }
    
-    void inline AddToBuffer(ArduDebMessage message) {
+    static inline void AddToBuffer(ArduDebMessage message) {
         strcat(eventsMessagesBuffer, message.Build());   // The message build already include separator
     }
 
@@ -98,8 +93,9 @@ private:
     // Event class can have access to logging
     friend class Event;
 
-#define MaxLogAttempt 5
-    bool LogMessage(ArduDebMessage message, uint8_t attempt = 0) {
+    #define MaxLogAttempt 5
+    
+    static inline bool LogMessage(ArduDebMessage message, uint8_t attempt = 0) {
         if (attempt >= MaxLogAttempt) {
             return false;       // Max log attempts reached, give up
         }
@@ -121,7 +117,7 @@ private:
         return true;
     }
 
-    bool FlushBuffer()
+    static inline bool FlushBuffer()
     {
         if (strlen(eventsMessagesBuffer) == EmptyBufferSpace()) {
             return false; // Buffer is empty, no need to flush
@@ -149,11 +145,10 @@ public:
     
 
 protected:
-    ArduDeb* deb;
 
     bool inline Log(const char* content) {
         ArduDebMessage message(getName(), content);
-        return deb->LogMessage(message);
+        return ArduDeb::LogMessage(message);
     }
 
 private:
