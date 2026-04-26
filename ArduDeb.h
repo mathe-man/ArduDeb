@@ -135,7 +135,7 @@ private:
 
 class Event {
 public:
-    Event(const char* name, ArduDeb* deb) : eventName(name), deb(deb) {}
+    Event(const char* name) : eventName(name) {}
 
     virtual const void flag() = 0;
 
@@ -157,7 +157,7 @@ private:
 
 class TickEvent : public Event {
 public:
-    TickEvent(ArduDeb* deb) : Event("TickEvent", deb) {}
+    TickEvent() : Event("TickEvent") {}
 
     const void flag() override {
         Log("Tick");
