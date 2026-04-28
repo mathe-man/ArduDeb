@@ -43,11 +43,11 @@ public:
         writeFunction = func;
     }
 
-    bool Flush() {
+    static inline bool Flush() {
         return FlushBuffer();
     }
 
-    bool Log(ArduDebMessage message)
+    static inline bool Log(ArduDebMessage message)
     {
         return LogMessage(message);
     }
@@ -117,7 +117,7 @@ private:
 
     static inline bool FlushBuffer()
     {
-        if (strlen(eventsMessagesBuffer) == EmptyBufferSpace()) {
+        if (strlen(eventsMessagesBuffer) == 0) {
             return false; // Buffer is empty, no need to flush
         }
         // Send the serial communication with the format: MagicNumber|BoardName|message1|message2|...|messageN (Assuming the separator is '|')
