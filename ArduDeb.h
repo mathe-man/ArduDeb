@@ -58,7 +58,7 @@ public:
 
     static inline void println(const char* value) {
         writeFunction(value);
-        writeFunction("\n\r");  // Finish the line with a newline and carriage return
+        writeFunction("\r\n");  // Finish the line with a newline and carriage return
     }
 
 
